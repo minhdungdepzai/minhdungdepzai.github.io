@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Heart Edge Particles</title>
+<style>
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: black;
+    }
+    canvas {
+        display: block;
+    }
+</style>
+</head>
+<body>
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = innerWidth;
+canvas.height = innerHeight;
+
+let particles = [];
+let t = 0;
+
+// Hàm trả về điểm viền trái tim
+function heartPoint(angle, scale) {
+    let x = 16 * Math.pow(Math.sin(angle), 3);
+    let y = 13 * Math.cos(angle)
+        - 5 * Math.cos(2 * angle)
+        - 2 * Math.cos(3 * angle)
+        - Math.cos(4 * angle);
+
+    return {
+        x: canvas.width / 2 + x * scale,
+        y: canvas.height / 2 - y * scale
+    };
+}
+
+// Tạo hạt theo đường viền trái tim
+function spawnParticle() {
+    let scale = 10 + Math.sin(t) * 1.2; // nhịp đập
+    let angle = Math.random() * Math.PI * 2;
+
+    // 80% hạt ở viền - 20% ở trong
+    let r = (Math.random() < 0.8) ? 1 : (0.6 + Math.random() * 0.3);
+
+    let hp = heartPoint(angle, scale * r);
+
+    let speed = 1 + Math.random() * 1.5;
+
+    particles.push({
+        x: hp.x,
+        y: hp.y,
+        vx: (Math.random() - 0.5) * speed,
+        vy: (Math.random() - 0.5) * speed,
+        alpha: 1,
+        size: Math.random() * 2.2 + 0.8,
+        color: "#ff4fa3"
+    });
+}
+
+function animate() {
+    requestAnimationFrame(animate);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    t += 0.07;
+
+    // tạo 120 hạt mỗi frame
+    for (let i = 0; i < 120; i++) spawnParticle();
+
+    // vẽ hạt
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+
+        p.x += p.vx;
+        p.y += p.vy;
+        p.alpha -= 0.015;
+
+        if (p.alpha <= 0) particles.splice(i, 1);
+    }
+}
+
+animate();
+</script>
+</body>
+</html>
