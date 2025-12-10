@@ -3,34 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pháo hoa mô phỏng – Trang của bạn</title>
+<title>Pháo hoa mô phỏng – bản đẹp</title>
+
+<!-- Font đẹp -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
 <style>
     body {
         margin: 0;
         overflow: hidden;
         background: #000;
-        font-family: Arial, sans-serif;
+        font-family: "Poppins", sans-serif;
     }
 
-    /* Bảng điều khiển */
-    #control-panel {
+    /* Bảng cài đặt */
+    #panel {
         position: fixed;
-        top: 10px;
-        left: 10px;
-        padding: 12px;
-        background: rgba(0,0,0,0.4);
+        top: 20px;
+        left: 20px;
+        padding: 16px;
+        width: 240px;
+
+        background: rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(12px);
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.2);
+
         color: white;
-        border-radius: 10px;
-        backdrop-filter: blur(6px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
     }
-    #control-panel label {
+
+    #panel h2 {
+        margin: 0 0 10px;
+        font-weight: 600;
+        font-size: 18px;
+    }
+
+    #panel label {
         font-size: 14px;
+        margin-top: 10px;
         display: block;
-        margin-top: 6px;
     }
-    #control-panel select, #control-panel input {
-        width: 150px;
-        margin-top: 3px;
+
+    #panel select,
+    #panel input[type="range"],
+    #panel input[type="checkbox"] {
+        width: 100%;
+        margin-top: 5px;
+        padding: 4px 6px;
+        border-radius: 6px;
+        border: none;
+    }
+
+    #panel input[type="checkbox"] {
+        width: auto;
+        transform: scale(1.2);
+        cursor: pointer;
     }
 </style>
 </head>
@@ -38,20 +66,23 @@
 
 <canvas id="canvas"></canvas>
 
-<div id="control-panel">
-    <label>Loại pháo:</label>
+<div id="panel">
+    <h2>⚙️ Cài đặt</h2>
+
+    <label>Loại pháo nổ</label>
     <select id="type">
         <option value="circle">Hình tròn</option>
-        <option value="star">Hình sao</option>
-        <option value="flower">Hình hoa</option>
+        <option value="star">Ngôi sao</option>
+        <option value="flower">Hoa</option>
     </select>
 
-    <label>Kích thước:</label>
+    <label>Kích thước nổ</label>
     <input id="size" type="range" min="2" max="6" value="3">
 
-    <label>Tự bắn pháo:</label>
+    <label>Tự bắn pháo</label>
     <input id="auto" type="checkbox">
 </div>
+
 
 <script>
 const canvas = document.getElementById("canvas");
@@ -65,73 +96,136 @@ function resize() {
 resize();
 window.onresize = resize;
 
+// -------------------------------
+// HIỆU ỨNG ROCKET BAY LÊN
+// -------------------------------
+class Rocket {
+    constructor() {
+        this.x = Math.random() * W;
+        this.y = H;
+        this.targetY = Math.random() * H * 0.4 + 50;
+
+        this.speed = 8 + Math.random() * 4;
+        this.color = `hsl(${Math.random()*360}, 100%, 70%)`;
+    }
+
+    update() {
+        this.y -= this.speed;
+        return this.y <= this.targetY; // đến điểm nổ
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+// -------------------------------
+// HIỆU ỨNG NỔ PHÁO HOA
+// -------------------------------
 class Particle {
     constructor(x, y, angle, speed, color, size) {
         this.x = x;
         this.y = y;
+
         this.dx = Math.cos(angle) * speed;
         this.dy = Math.sin(angle) * speed;
+
         this.color = color;
         this.life = 100;
         this.size = size;
     }
+
     update() {
         this.x += this.dx;
         this.y += this.dy;
-        this.dy += 0.02;    // trọng lực
+
+        this.dy += 0.02; // trọng lực
         this.dx *= 0.99;
         this.dy *= 0.99;
+
         this.life--;
     }
+
     draw() {
         ctx.globalAlpha = this.life / 100;
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
         ctx.fill();
+        ctx.globalAlpha = 1;
     }
 }
- 
+
+const rockets = [];
 const particles = [];
 
 function explode(x, y) {
     const type = document.getElementById("type").value;
     const size = Number(document.getElementById("size").value);
+
+    const color = `hsl(${Math.random()*360},100%,60%)`;
     let count = 120;
 
-    for (let i = 0; i < count; i++) {
+    for (let i=0; i<count; i++) {
         let angle = Math.random() * Math.PI * 2;
-        let speed = Math.random() * 4 + 2;
-        
-        // Các kiểu mô phỏng
-        if (type === "star") speed *= (i % 5 === 0) ? 1.8 : 0.8;
-        if (type === "flower") angle = Math.floor(i / 10) * (Math.PI / 5);
+        let speed = Math.random() * 5 + 2;
 
-        const color = `hsl(${Math.random()*360},100%,60%)`;
+        if (type === "star") {
+            speed *= (i % 5 === 0) ? 2 : 0.6;
+        }
+
+        if (type === "flower") {
+            angle = Math.floor(i / 10) * (Math.PI / 5);
+        }
+
         particles.push(new Particle(x, y, angle, speed, color, size));
     }
 }
 
+function launchRocket() {
+    rockets.push(new Rocket());
+}
+
+canvas.addEventListener("click", e => {
+    rockets.push(new Rocket());
+    rockets[rockets.length - 1].x = e.clientX;
+});
+
+setInterval(() => {
+    if (document.getElementById("auto").checked) {
+        launchRocket();
+    }
+}, 600);
+
+// -------------------------------
+// LOOP ANIMATION
+// -------------------------------
 function animate() {
     requestAnimationFrame(animate);
     ctx.fillStyle = "rgba(0,0,0,0.2)";
     ctx.fillRect(0,0,W,H);
 
+    // rocket
+    rockets.forEach((r, i) => {
+        r.draw();
+        if (r.update()) {
+            explode(r.x, r.y);
+            rockets.splice(i, 1);
+        }
+    });
+
+    // particles
     particles.forEach((p, i) => {
         p.update();
         p.draw();
         if (p.life <= 0) particles.splice(i, 1);
     });
 }
+
 animate();
-
-canvas.addEventListener("click", e => explode(e.clientX, e.clientY));
-
-setInterval(() => {
-    if (document.getElementById("auto").checked) {
-        explode(Math.random()*W, Math.random()*H*0.6);
-    }
-}, 700);
 </script>
 
 </body>
