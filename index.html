@@ -2,29 +2,31 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Fireworks Demo</title>
+    <title>Ultra Fireworks</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<div id="settings" class="hidden">
+<canvas id="canvas"></canvas>
+
+<div id="ui" class="hide">
     <h3>Cài đặt pháo hoa</h3>
 
-    <label>Kiểu pháo hoa:</label>
-    <select id="type">
+    <label>Kiểu nổ:</label>
+    <select id="explosionType">
         <option value="burst">Burst</option>
-        <option value="spark">Spark</option>
+        <option value="spark">Spark (nổ tia li ti)</option>
         <option value="star">Star</option>
         <option value="ring">Ring</option>
         <option value="willow">Willow</option>
-        <option value="chrysanthemum">Chrysanthemum</option>
+        <option value="chrys">Chrysanthemum</option>
+        <option value="crackle">Crackle (tí tách)</option>
+        <option value="glitter">Glitter</option>
     </select>
 
-    <label>Số lượng hạt:</label>
-    <input id="count" type="range" min="20" max="200" value="90">
+    <label>Cường độ nổ</label>
+    <input id="density" type="range" min="40" max="300" value="140">
 </div>
-
-<canvas id="c"></canvas>
 
 <script src="script.js"></script>
 </body>
