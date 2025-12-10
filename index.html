@@ -3,225 +3,279 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pháo hoa mô phỏng – bản đẹp</title>
+<title>Ultra Fireworks</title>
 
-<!-- Font đẹp -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
     body {
         margin: 0;
         overflow: hidden;
-        background: #000;
+        background: black;
         font-family: "Poppins", sans-serif;
+        user-select: none;
     }
 
-    /* Bảng cài đặt */
     #panel {
         position: fixed;
         top: 20px;
         left: 20px;
-        padding: 16px;
         width: 240px;
-
-        background: rgba(255, 255, 255, 0.12);
+        padding: 16px;
+        background: rgba(255,255,255,0.15);
         backdrop-filter: blur(12px);
         border-radius: 18px;
-        border: 1px solid rgba(255,255,255,0.2);
-
         color: white;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.25);
+        transition: opacity 0.6s ease;
+        opacity: 1;
+        pointer-events: auto;
     }
 
-    #panel h2 {
-        margin: 0 0 10px;
-        font-weight: 600;
-        font-size: 18px;
+    #panel.hidden {
+        opacity: 0;
+        pointer-events: none;
     }
 
     #panel label {
         font-size: 14px;
-        margin-top: 10px;
+        margin-top: 12px;
         display: block;
     }
 
     #panel select,
-    #panel input[type="range"],
-    #panel input[type="checkbox"] {
+    #panel input[type=range],
+    #panel input[type=checkbox] {
         width: 100%;
-        margin-top: 5px;
-        padding: 4px 6px;
+        padding: 4px;
         border-radius: 6px;
-        border: none;
+        margin-top: 4px;
     }
 
-    #panel input[type="checkbox"] {
-        width: auto;
-        transform: scale(1.2);
-        cursor: pointer;
+    #hint {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        color: white;
+        font-size: 14px;
+        opacity: 0.5;
     }
 </style>
 </head>
 <body>
 
-<canvas id="canvas"></canvas>
-
 <div id="panel">
-    <h2>⚙️ Cài đặt</h2>
-
-    <label>Loại pháo nổ</label>
+    <label>Kiểu nổ</label>
     <select id="type">
-        <option value="circle">Hình tròn</option>
+        <option value="circle">Tròn lớn</option>
         <option value="star">Ngôi sao</option>
         <option value="flower">Hoa</option>
+        <option value="crackle">Crackle</option>
+        <option value="willow">Willow (đuôi dài)</option>
     </select>
 
-    <label>Kích thước nổ</label>
-    <input id="size" type="range" min="2" max="6" value="3">
+    <label>Kích thước</label>
+    <input id="size" type="range" min="2" max="8" value="4">
 
-    <label>Tự bắn pháo</label>
+    <label>Tự bắn</label>
     <input id="auto" type="checkbox">
 </div>
 
+<div id="hint">Nhấn vào màn hình để bắn pháo hoa</div>
+
+<canvas id="canvas"></canvas>
 
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 let W, H;
-
 function resize() {
-    W = canvas.width = window.innerWidth;
-    H = canvas.height = window.innerHeight;
+    W = canvas.width = innerWidth;
+    H = canvas.height = innerHeight;
 }
 resize();
-window.onresize = resize;
+addEventListener("resize", resize);
+
+// =====================
+// AUTO HIDE PANEL
+// =====================
+let hideTimeout;
+function resetHide() {
+    clearTimeout(hideTimeout);
+    document.getElementById("panel").classList.remove("hidden");
+    hideTimeout = setTimeout(() => {
+        document.getElementById("panel").classList.add("hidden");
+    }, 2500);
+}
+document.body.addEventListener("mousemove", resetHide);
+resetHide();
 
 // -------------------------------
-// HIỆU ỨNG ROCKET BAY LÊN
+// ROCKET WITH SMOKE TRAIL
 // -------------------------------
 class Rocket {
-    constructor() {
-        this.x = Math.random() * W;
+    constructor(x = Math.random()*W, slow = false) {
+        this.x = x;
         this.y = H;
-        this.targetY = Math.random() * H * 0.4 + 50;
 
-        this.speed = 8 + Math.random() * 4;
-        this.color = `hsl(${Math.random()*360}, 100%, 70%)`;
+        this.targetY = H * (0.3 + Math.random()*0.3);
+        this.speed = slow ? 3 : 5 + Math.random()*2;
+        this.color = `hsl(${Math.random()*360},100%,75%)`;
+
+        this.trail = [];
+        this.maxTrail = 40;
     }
 
     update() {
         this.y -= this.speed;
-        return this.y <= this.targetY; // đến điểm nổ
+        this.trail.push({x: this.x, y: this.y});
+        if (this.trail.length > this.maxTrail) this.trail.shift();
+        return this.y <= this.targetY;
     }
 
     draw() {
+        for (let i = 0; i < this.trail.length; i++) {
+            const p = this.trail[i];
+            let a = i / this.trail.length;
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = a * 0.8;
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 2.2, 0, Math.PI*2);
+            ctx.fill();
+        }
+
         ctx.fillStyle = this.color;
+        ctx.globalAlpha = 1;
         ctx.beginPath();
-        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
         ctx.fill();
     }
 }
 
 // -------------------------------
-// HIỆU ỨNG NỔ PHÁO HOA
+// PARTICLE (HIGH QUALITY)
 // -------------------------------
 class Particle {
-    constructor(x, y, angle, speed, color, size) {
+    constructor(x, y, angle, speed, color, size, type) {
         this.x = x;
         this.y = y;
 
         this.dx = Math.cos(angle) * speed;
         this.dy = Math.sin(angle) * speed;
 
-        this.color = color;
-        this.life = 100;
+        this.life = 120 + Math.random()*40;
         this.size = size;
+        this.color = color;
+        this.type = type;
+
+        this.gravity = 0.03;
+        this.friction = 0.985;
     }
 
     update() {
         this.x += this.dx;
         this.y += this.dy;
 
-        this.dy += 0.02; // trọng lực
-        this.dx *= 0.99;
-        this.dy *= 0.99;
+        this.dy += this.gravity;
+        this.dx *= this.friction;
+        this.dy *= this.friction;
+
+        if (this.type === "willow") this.dy += 0.01;
 
         this.life--;
     }
 
     draw() {
-        ctx.globalAlpha = this.life / 100;
+        ctx.globalCompositeOperation = "lighter";
+        ctx.globalAlpha = Math.max(this.life / 150, 0);
+
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
         ctx.fill();
-        ctx.globalAlpha = 1;
+
+        // glow
+        ctx.globalAlpha *= 0.25;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size*3, 0, Math.PI*2);
+        ctx.fill();
+    }
+}
+
+// -------------------------------
+// EXPLOSIONS
+// -------------------------------
+function explode(x, y) {
+    const type = document.getElementById("type").value;
+    const size = Number(document.getElementById("size").value);
+    
+    const color = `hsl(${Math.random()*360},100%,60%)`;
+    let count = 180;
+
+    for (let i = 0; i < count; i++) {
+        let angle = Math.random()*Math.PI*2;
+        let speed = Math.random()*4 + 2;
+
+        if (type === "star") speed *= (i % 5 === 0 ? 2.5 : 0.7);
+        if (type === "flower") angle = Math.floor(i/10)*(Math.PI/5);
+        if (type === "crackle") speed *= 0.4 + Math.random()*2.2;
+        if (type === "willow") speed *= 0.4;
+
+        particles.push(
+            new Particle(x, y, angle, speed, color, size, type)
+        );
+    }
+
+    // crackle sound effect simulated (light)
+    if (type === "crackle") {
+        for (let i = 0; i < 40; i++) {
+            let angle = Math.random()*Math.PI*2;
+            let speed = 1 + Math.random()*2;
+            particles.push(
+                new Particle(x, y, angle, speed, "#fff", 1.5, type)
+            );
+        }
     }
 }
 
 const rockets = [];
 const particles = [];
 
-function explode(x, y) {
-    const type = document.getElementById("type").value;
-    const size = Number(document.getElementById("size").value);
-
-    const color = `hsl(${Math.random()*360},100%,60%)`;
-    let count = 120;
-
-    for (let i=0; i<count; i++) {
-        let angle = Math.random() * Math.PI * 2;
-        let speed = Math.random() * 5 + 2;
-
-        if (type === "star") {
-            speed *= (i % 5 === 0) ? 2 : 0.6;
-        }
-
-        if (type === "flower") {
-            angle = Math.floor(i / 10) * (Math.PI / 5);
-        }
-
-        particles.push(new Particle(x, y, angle, speed, color, size));
-    }
+function launch(x, slow = false) {
+    rockets.push(new Rocket(x, slow));
 }
 
-function launchRocket() {
-    rockets.push(new Rocket());
-}
-
-canvas.addEventListener("click", e => {
-    rockets.push(new Rocket());
-    rockets[rockets.length - 1].x = e.clientX;
-});
+canvas.addEventListener("click", e => launch(e.clientX));
 
 setInterval(() => {
     if (document.getElementById("auto").checked) {
-        launchRocket();
+        launch(Math.random()*W, true);
     }
-}, 600);
+}, 800);
 
 // -------------------------------
-// LOOP ANIMATION
+// MAIN LOOP
 // -------------------------------
 function animate() {
     requestAnimationFrame(animate);
-    ctx.fillStyle = "rgba(0,0,0,0.2)";
+
+    ctx.globalCompositeOperation = "source-over";
+    ctx.fillStyle = "rgba(0,0,0,0.18)";
     ctx.fillRect(0,0,W,H);
 
-    // rocket
-    rockets.forEach((r, i) => {
+    rockets.forEach((r,i) => {
         r.draw();
         if (r.update()) {
             explode(r.x, r.y);
-            rockets.splice(i, 1);
+            rockets.splice(i,1);
         }
     });
 
-    // particles
-    particles.forEach((p, i) => {
+    particles.forEach((p,i) => {
         p.update();
         p.draw();
-        if (p.life <= 0) particles.splice(i, 1);
+        if (p.life <= 0) particles.splice(i,1);
     });
 }
 
