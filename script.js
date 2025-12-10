@@ -1,193 +1,116 @@
-// ===== Canvas =====
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+// --- FIREWORKS ENGINE FIXED VERSION ---
+// Works with your HTML without modifying structure
 
+const trailsCanvas = document.getElementById("trails-canvas");
+const mainCanvas = document.getElementById("main-canvas");
+
+const ctxTrails = trailsCanvas.getContext("2d");
+const ctxMain = mainCanvas.getContext("2d");
+
+// Resize canvases
 function resize() {
-    canvas.width = innerWidth;
-    canvas.height = innerHeight;
+    trailsCanvas.width = mainCanvas.width = innerWidth;
+    trailsCanvas.height = mainCanvas.height = innerHeight;
 }
+window.addEventListener("resize", resize);
 resize();
-addEventListener("resize", resize);
 
-// ===== UI Auto-hide =====
-const ui = document.getElementById("ui");
-let lastMove = Date.now();
-
-document.addEventListener("mousemove", () => {
-    lastMove = Date.now();
-    ui.classList.remove("hide");
-});
-
-setInterval(() => {
-    if (Date.now() - lastMove > 1500) ui.classList.add("hide");
-}, 300);
-
-// ===== Utils =====
-const rand = (a, b) => a + Math.random() * (b - a);
-const hsl = (h, s, l) => `hsl(${h},${s}%,${l}%)`;
-
-let rockets = [];
-let particles = [];
-
-// ===== Rocket (đốm sáng bay lên) =====
-class Rocket {
-    constructor(x = rand(80, innerWidth - 80)) {
-        this.x = x;
-        this.y = innerHeight;
-        this.vx = rand(-0.6, 0.6);
-        this.vy = rand(4, 6);
-        this.hue = rand(0, 360);
-        this.trail = [];
-    }
-
-    update() {
-        this.x += this.vx * Math.sin(Date.now() * 0.0025);
-        this.y -= this.vy;
-
-        // Lưu vệt sáng
-        this.trail.push({ x: this.x, y: this.y });
-        if (this.trail.length > 10) this.trail.shift();
-
-        // Điều kiện nổ
-        if (this.vy < 1 || this.y < innerHeight * 0.35) {
-            this.explode();
-            return true;
-        }
-        return false;
-    }
-
-    draw() {
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-
-        // Vệt sáng
-        for (let i = 0; i < this.trail.length; i++) {
-            const p = this.trail[i];
-            const alpha = i / this.trail.length;
-            ctx.fillStyle = `rgba(255,255,255,${alpha * 0.4})`;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // Lõi sáng
-        ctx.shadowColor = hsl(this.hue, 100, 80);
-        ctx.shadowBlur = 20;
-        ctx.fillStyle = hsl(this.hue, 100, 70);
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-    }
-
-    explode() {
-        const type = document.getElementById("explosionType").value;
-        const count = Number(document.getElementById("density").value);
-        const angleStep = (Math.PI * 2) / count;
-
-        for (let i = 0; i < count; i++) {
-            const angle = angleStep * i;
-            const speed = rand(2, 5);
-            particles.push(
-                new Particle(this.x, this.y, angle, speed, this.hue, type)
-            );
-        }
-    }
-}
-
-// ===== Particle (hạt nổ) =====
+// Particle system
 class Particle {
-    constructor(x, y, angle, speed, hue, type) {
+    constructor(x, y, color, vx, vy, life = 60) {
         this.x = x;
         this.y = y;
-        this.vx = Math.cos(angle) * speed;
-        this.vy = Math.sin(angle) * speed;
-        this.hue = hue + rand(-10, 10);
-        this.life = rand(50, 120);
-        this.type = type;
-        this.size = rand(1.2, 2.4);
-        this.glow = rand(10, 25);
-        this.flicker = Math.random() < 0.1;
+        this.color = color;
+        this.vx = vx;
+        this.vy = vy;
+        this.life = life;
+        this.alpha = 1;
     }
-
     update() {
         this.x += this.vx;
         this.y += this.vy;
-
-        // Trọng lực
-        this.vy += 0.015;
-
-        // Giảm tốc
-        this.vx *= 0.985;
-        this.vy *= 0.985;
-
+        this.vy += 0.02;
+        this.alpha = this.life / 60;
         this.life--;
-        return this.life <= 0;
+        return this.life > 0;
     }
-
-    draw() {
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-
-        let alpha = this.life / 100;
-        ctx.globalAlpha = alpha;
-
-        ctx.shadowColor = hsl(this.hue, 100, 70);
-        ctx.shadowBlur = this.glow;
-
-        ctx.fillStyle = hsl(this.hue, 100, 60);
-
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // crackle
-        if (this.type === "crackle" && Math.random() < 0.2) {
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            ctx.arc(this.x, this.y, 1.2, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // glitter
-        if (this.type === "glitter" && this.flicker && Math.random() < 0.4) {
-            ctx.beginPath();
-            ctx.fillStyle = "white";
-            ctx.arc(this.x, this.y, 1, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        ctx.restore();
+    draw(ctx) {
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = this.color;
+        ctx.fillRect(this.x, this.y, 3, 3);
+        ctx.globalAlpha = 1;
     }
 }
 
-// ===== Animation =====
+let fireworks = [];
+
+function launchFirework() {
+    const x = Math.random() * innerWidth;
+    const y = innerHeight;
+    const targetY = 200 + Math.random() * 200;
+
+    const fw = {
+        x,
+        y,
+        targetY,
+        color: `hsl(${Math.random()*360},100%,60%)`,
+        exploded: false
+    };
+
+    fireworks.push(fw);
+}
+
+function explode(fw) {
+    for (let i = 0; i < 80; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 2 + Math.random() * 3;
+        particles.push(
+            new Particle(
+                fw.x,
+                fw.y,
+                fw.color,
+                Math.cos(angle) * speed,
+                Math.sin(angle) * speed
+            )
+        );
+    }
+}
+
+let particles = [];
+
 function animate() {
     requestAnimationFrame(animate);
 
-    ctx.fillStyle = "rgba(0,0,0,0.2)";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Trails fade
+    ctxTrails.fillStyle = "rgba(0,0,0,0.2)";
+    ctxTrails.fillRect(0, 0, innerWidth, innerHeight);
 
-    for (let i = rockets.length - 1; i >= 0; i--) {
-        rockets[i].draw();
-        if (rockets[i].update()) rockets.splice(i, 1);
-    }
+    // Clear main layer
+    ctxMain.clearRect(0, 0, innerWidth, innerHeight);
 
-    for (let i = particles.length - 1; i >= 0; i--) {
-        particles[i].draw();
-        if (particles[i].update()) particles.splice(i, 1);
-    }
+    // Update fireworks
+    fireworks = fireworks.filter(fw => {
+        if (!fw.exploded) {
+            fw.y -= 6;
+            ctxMain.fillStyle = fw.color;
+            ctxMain.fillRect(fw.x, fw.y, 4, 12);
+
+            if (fw.y <= fw.targetY) {
+                fw.exploded = true;
+                explode(fw);
+            }
+            return true;
+        }
+        return false;
+    });
+
+    // Update particles
+    particles = particles.filter(p => {
+        const alive = p.update();
+        if (alive) p.draw(ctxTrails);
+        return alive;
+    });
 }
+
+setInterval(launchFirework, 900);
 animate();
-
-// ===== Controls =====
-canvas.addEventListener("pointerdown", e => {
-    rockets.push(new Rocket(e.clientX));
-});
-
-// Auto launch
-setInterval(() => {
-    if (Math.random() < 0.28)
-        rockets.push(new Rocket());
-}, 500);
