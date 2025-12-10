@@ -1,25 +1,31 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pháo Hoa</title>
-    <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <title>Fireworks Demo</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- Bảng Cài Đặt -->
-    <div id="settings">
-        <h2>Cài đặt pháo hoa</h2>
-        <label>
-            Số lượng pháo hoa:
-            <input type="range" id="rocketRate" min="1" max="20" value="6">
-        </label>
-        <button id="toggleSettings">Ẩn bảng</button>
-    </div>
+<div id="settings" class="hidden">
+    <h3>Cài đặt pháo hoa</h3>
 
-    <canvas id="canvas"></canvas>
+    <label>Kiểu pháo hoa:</label>
+    <select id="type">
+        <option value="burst">Burst</option>
+        <option value="spark">Spark</option>
+        <option value="star">Star</option>
+        <option value="ring">Ring</option>
+        <option value="willow">Willow</option>
+        <option value="chrysanthemum">Chrysanthemum</option>
+    </select>
 
-    <script src="script.js"></script>
+    <label>Số lượng hạt:</label>
+    <input id="count" type="range" min="20" max="200" value="90">
+</div>
+
+<canvas id="c"></canvas>
+
+<script src="script.js"></script>
 </body>
 </html>
