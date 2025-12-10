@@ -1,286 +1,481 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ultra Fireworks</title>
-
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Pháo hoa chân thực</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
-
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        background: black;
-        font-family: "Poppins", sans-serif;
-        user-select: none;
-    }
+  :root{
+    --panel-bg: rgba(255,255,255,0.10);
+    --panel-border: rgba(255,255,255,0.18);
+    --text: #ffffff;
+  }
+  html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:"Poppins",sans-serif}
+  canvas{display:block;width:100%;height:100%}
 
-    #panel {
-        position: fixed;
-        top: 20px;
-        left: 20px;
-        width: 240px;
-        padding: 16px;
-        background: rgba(255,255,255,0.15);
-        backdrop-filter: blur(12px);
-        border-radius: 18px;
-        color: white;
-        border: 1px solid rgba(255,255,255,0.25);
-        transition: opacity 0.6s ease;
-        opacity: 1;
-        pointer-events: auto;
-    }
+  /* Panel style (glassmorphism) */
+  #panel{
+    position:fixed; left:20px; top:20px; width:260px; padding:14px;
+    background:var(--panel-bg); color:var(--text);
+    border-radius:14px; border:1px solid var(--panel-border);
+    backdrop-filter:blur(10px) saturate(120%);
+    box-shadow:0 10px 30px rgba(0,0,0,0.5);
+    transition:opacity .5s ease, transform .4s ease;
+    z-index:50; pointer-events:auto;
+  }
+  #panel.hidden{opacity:0; transform:translateY(-8px); pointer-events:none}
+  #panel h3{margin:0 0 6px 0; font-weight:600; font-size:16px}
+  label{font-size:13px; display:block; margin-top:10px}
+  select,input[type=range], input[type=checkbox], button {
+    width:100%; margin-top:6px; padding:6px 8px; border-radius:8px;
+    border:none; font-size:13px;
+  }
+  .row{display:flex; gap:8px}
+  .small{flex:1}
+  #hint{position:fixed; left:20px; bottom:18px; color:rgba(255,255,255,0.6); font-size:13px; z-index:40}
 
-    #panel.hidden {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    #panel label {
-        font-size: 14px;
-        margin-top: 12px;
-        display: block;
-    }
-
-    #panel select,
-    #panel input[type=range],
-    #panel input[type=checkbox] {
-        width: 100%;
-        padding: 4px;
-        border-radius: 6px;
-        margin-top: 4px;
-    }
-
-    #hint {
-        position: fixed;
-        bottom: 20px;
-        left: 20px;
-        color: white;
-        font-size: 14px;
-        opacity: 0.5;
-    }
+  /* top-left credit small */
+  #credit{position:fixed; right:18px; top:18px; color:rgba(255,255,255,0.6); font-size:13px; z-index:40}
 </style>
 </head>
 <body>
+<canvas id="c"></canvas>
 
 <div id="panel">
-    <label>Kiểu nổ</label>
-    <select id="type">
-        <option value="circle">Tròn lớn</option>
-        <option value="star">Ngôi sao</option>
-        <option value="flower">Hoa</option>
-        <option value="crackle">Crackle</option>
-        <option value="willow">Willow (đuôi dài)</option>
-    </select>
+  <h3>⚙️ Cài đặt Pháo hoa</h3>
 
-    <label>Kích thước</label>
-    <input id="size" type="range" min="2" max="8" value="4">
+  <label>Kiểu nổ</label>
+  <select id="type">
+    <option value="peony">Peony (Tròn)</option>
+    <option value="chrysanthemum">Chrysanthemum</option>
+    <option value="willow">Willow (đuôi rũ)</option>
+    <option value="star">Star (ngôi sao)</option>
+    <option value="crackle">Crackle (tí tách)</option>
+    <option value="multi">Multi-burst (nhiều tầng)</option>
+  </select>
 
-    <label>Tự bắn</label>
-    <input id="auto" type="checkbox">
+  <div class="row" style="margin-top:10px">
+    <div class="small">
+      <label>Kích thước</label>
+      <input id="size" type="range" min="2" max="8" value="4">
+    </div>
+    <div style="width:70px">
+      <label>Độ sáng</label>
+      <input id="brightness" type="range" min="0.6" max="1.8" step="0.05" value="1.0">
+    </div>
+  </div>
+
+  <label style="margin-top:10px"><input id="auto" type="checkbox" style="width:auto; transform:scale(1.1)"> Tự bắn</label>
+
+  <label style="margin-top:8px">Âm thanh (Bật/Tắt)</label>
+  <select id="sound">
+    <option value="on">Bật</option>
+    <option value="off">Tắt</option>
+  </select>
+
+  <button id="finale" style="margin-top:10px">▶ Finale (Nổ liên tục)</button>
 </div>
 
-<div id="hint">Nhấn vào màn hình để bắn pháo hoa</div>
-
-<canvas id="canvas"></canvas>
+<div id="hint">Nhấn/click hoặc chạm để bắn pháo. Di chuột để hiện bảng cài đặt.</div>
+<div id="credit">Phiên bản mô phỏng – của bạn</div>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-let W, H;
-function resize() {
-    W = canvas.width = innerWidth;
-    H = canvas.height = innerHeight;
-}
-resize();
-addEventListener("resize", resize);
+(() => {
+  // --- Setup canvas with DPR for crisp rendering ---
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d', { alpha: true });
+  let DPR = Math.max(1, window.devicePixelRatio || 1);
 
-// =====================
-// AUTO HIDE PANEL
-// =====================
-let hideTimeout;
-function resetHide() {
-    clearTimeout(hideTimeout);
-    document.getElementById("panel").classList.remove("hidden");
-    hideTimeout = setTimeout(() => {
-        document.getElementById("panel").classList.add("hidden");
-    }, 2500);
-}
-document.body.addEventListener("mousemove", resetHide);
-resetHide();
+  function resize() {
+    DPR = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = innerWidth * DPR;
+    canvas.height = innerHeight * DPR;
+    canvas.style.width = innerWidth + 'px';
+    canvas.style.height = innerHeight + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+  addEventListener('resize', resize, {passive:true});
+  resize();
 
-// -------------------------------
-// ROCKET WITH SMOKE TRAIL
-// -------------------------------
-class Rocket {
-    constructor(x = Math.random()*W, slow = false) {
-        this.x = x;
-        this.y = H;
+  // --- utilities ---
+  const rand = (a,b)=> a + Math.random()*(b-a);
+  const randInt = (a,b)=> Math.floor(rand(a,b+1));
+  function hsl(h,s,l){ return `hsl(${h},${s}%,${l}%)` }
 
-        this.targetY = H * (0.3 + Math.random()*0.3);
-        this.speed = slow ? 3 : 5 + Math.random()*2;
-        this.color = `hsl(${Math.random()*360},100%,75%)`;
-
-        this.trail = [];
-        this.maxTrail = 40;
+  // --- audio: simple crackle + boom using WebAudio ---
+  const AudioEnabled = () => (document.getElementById('sound').value === 'on');
+  let audioCtx = null;
+  function ensureAudio(){
+    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  function playBoom(){
+    if(!AudioEnabled()) return;
+    ensureAudio();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(120, audioCtx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime+0.25);
+    g.gain.setValueAtTime(0.0001, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.15, audioCtx.currentTime+0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime+0.4);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(); o.stop(audioCtx.currentTime+0.45);
+  }
+  function playCrackle(x){
+    if(!AudioEnabled()) return;
+    ensureAudio();
+    const length = 0.12;
+    // make noise burst
+    let bufferSize = audioCtx.sampleRate * length;
+    let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    let data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){
+      data[i] = (Math.random()*2-1) * Math.exp(-i/bufferSize*4);
     }
+    let src = audioCtx.createBufferSource();
+    src.buffer = buffer;
+    const g = audioCtx.createGain();
+    g.gain.value = 0.08;
+    src.connect(g); g.connect(audioCtx.destination);
+    src.start();
+  }
 
-    update() {
-        this.y -= this.speed;
-        this.trail.push({x: this.x, y: this.y});
-        if (this.trail.length > this.maxTrail) this.trail.shift();
-        return this.y <= this.targetY;
+  // --- state arrays ---
+  const rockets = [];
+  const particles = [];
+  const skyFlashes = []; // for brief brightening of sky
+
+  // --- Classes ---
+  class Rocket {
+    constructor(x){
+      this.x = (x === undefined) ? rand(60, innerWidth-60) : x;
+      this.y = innerHeight + 10;
+      this.targetY = rand(innerHeight*0.18, innerHeight*0.45);
+      this.speed = rand(2.2, 4.2); // bay từ từ
+      this.colorHue = randInt(0,360);
+      this.trail = []; // very short trail for slight glow, length small
+      this.maxTrail = 6; // short: no long streaks
+      this.size = rand(3.6,5.6);
     }
-
-    draw() {
-        for (let i = 0; i < this.trail.length; i++) {
-            const p = this.trail[i];
-            let a = i / this.trail.length;
-            ctx.fillStyle = this.color;
-            ctx.globalAlpha = a * 0.8;
-
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 2.2, 0, Math.PI*2);
-            ctx.fill();
-        }
-
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = 1;
+    update(){
+      this.y -= this.speed;
+      this.trail.push({x:this.x, y:this.y});
+      if(this.trail.length > this.maxTrail) this.trail.shift();
+      return (this.y <= this.targetY);
+    }
+    draw(){
+      // draw short trail (small dots, slight blur)
+      ctx.save();
+      for(let i=0;i<this.trail.length;i++){
+        const p = this.trail[i];
+        const a = (i+1)/this.trail.length * 0.6;
+        ctx.globalAlpha = a;
+        ctx.fillStyle = hsl(this.colorHue, 100, 70);
         ctx.beginPath();
-        ctx.arc(this.x, this.y, 5, 0, Math.PI*2);
+        ctx.arc(p.x, p.y, 1.5 + i*0.2, 0, Math.PI*2);
         ctx.fill();
+      }
+      // head light
+      ctx.globalAlpha = 1;
+      ctx.beginPath();
+      ctx.fillStyle = hsl(this.colorHue, 100, 70);
+      ctx.shadowBlur = 14; ctx.shadowColor = hsl(this.colorHue,100,70);
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+      ctx.fill();
+      ctx.restore();
     }
-}
+  }
 
-// -------------------------------
-// PARTICLE (HIGH QUALITY)
-// -------------------------------
-class Particle {
-    constructor(x, y, angle, speed, color, size, type) {
-        this.x = x;
-        this.y = y;
+  class Particle {
+    constructor(x,y,angle,speed,color,size,opts={}){
+      this.x = x; this.y = y;
+      this.dx = Math.cos(angle)*speed;
+      this.dy = Math.sin(angle)*speed;
+      this.color = color;
+      this.size = size;
+      this.life = opts.life || rand(60, 160); // frames
+      this.age = 0;
+      this.decay = opts.decay || 0.98;
+      this.gravity = opts.gravity === undefined ? 0.02 : opts.gravity;
+      this.type = opts.type || 'normal'; // normal, willow, spark (crackle)
+      this.shortTrail = opts.shortTrail || 2; // very short
+      this.prev = {x:this.x, y:this.y};
+      this.fadeStart = opts.fadeStart || (this.life * 0.15);
+      this.canSubBurst = opts.canSubBurst || false;
+      this.hueShift = opts.hueShift || 0;
+    }
+    update(){
+      this.age++;
+      // store prev small for short 'vệt ngắn'
+      this.prev.x = this.x; this.prev.y = this.y;
 
-        this.dx = Math.cos(angle) * speed;
-        this.dy = Math.sin(angle) * speed;
+      this.x += this.dx;
+      this.y += this.dy;
+      this.dy += this.gravity;
+      this.dx *= this.decay;
+      this.dy *= this.decay;
 
-        this.life = 120 + Math.random()*40;
-        this.size = size;
-        this.color = color;
-        this.type = type;
+      // small flicker for crackle sparks
+      if(this.type === 'spark' && Math.random() < 0.06){
+        this.size *= (0.8 + Math.random()*0.6);
+      }
+      return this.age >= this.life;
+    }
+    draw(){
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      // global alpha reduced as age increases
+      let alpha = Math.max(0, (1 - this.age/this.life));
+      // keep core very bright for short time
+      alpha = Math.pow(alpha, 0.8);
+      ctx.globalAlpha = alpha * 1.0;
 
-        this.gravity = 0.03;
-        this.friction = 0.985;
+      // glow core
+      ctx.shadowBlur = Math.max(8, this.size*5);
+      ctx.shadowColor = this.color;
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+      ctx.fill();
+
+      // very short trail: draw a tiny line from prev to current with low alpha
+      ctx.globalAlpha = alpha * 0.45;
+      ctx.lineWidth = Math.max(1, this.size/2);
+      ctx.beginPath();
+      ctx.moveTo(this.prev.x, this.prev.y);
+      ctx.lineTo(this.x, this.y);
+      ctx.strokeStyle = this.color;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+  }
+
+  // --- explosion generator ---
+  function createExplosion(x,y,options={}){
+    const type = options.type || document.getElementById('type').value || 'peony';
+    const sizeFactor = options.size || Number(document.getElementById('size').value);
+    const brightness = Number(document.getElementById('brightness').value) || 1.0;
+    const baseHue = randInt(0, 360);
+    const mainCount = Math.round(rand(180, 420) * (sizeFactor/4));
+    // sky flash
+    skyFlashes.push({x,y,life:24,alpha:0.16 * brightness});
+
+    // main burst
+    for(let i=0;i<mainCount;i++){
+      let angle;
+      let speed = rand(1.6, 5.6) * (sizeFactor/4);
+      // patterns
+      if(type === 'peony'){
+        angle = rand(0, Math.PI*2);
+        speed *= (0.8 + Math.random()*0.7);
+      } else if(type === 'chrysanthemum'){
+        angle = rand(0, Math.PI*2);
+        speed *= (1.0 + Math.random()*1.2);
+        // allow more evenly distributed
+      } else if(type === 'willow'){
+        angle = rand(-Math.PI, Math.PI);
+        // willow has slower speed and stronger gravity
+        speed *= rand(0.5, 1.1);
+      } else if(type === 'star'){
+        // concentrate a few star points, others are filler
+        const spikes = 5;
+        const spike = i % spikes;
+        angle = spike * (Math.PI*2/spikes) + rand(-0.15,0.15);
+        speed *= (Math.random()*0.6 + (spike%2?1.2:1.0));
+      } else if(type === 'crackle'){
+        angle = rand(0, Math.PI*2);
+        speed *= rand(0.6, 2.6);
+      } else if(type === 'multi'){
+        angle = rand(0, Math.PI*2);
+        speed *= rand(0.6, 3.8);
+      } else {
+        angle = rand(0, Math.PI*2);
+      }
+
+      // color variation and brightness
+      const hue = (baseHue + randInt(-30,30)) % 360;
+      const color = hsl(hue, 100, Math.min(90, 50 + 12 * brightness));
+
+      // particle size (small dots)
+      const psize = rand(0.8, 2.2) * (sizeFactor/4);
+
+      // type options
+      const opts = {};
+      if(type === 'willow') { opts.gravity = 0.06; opts.decay = 0.992; }
+      if(type === 'crackle'){ opts.type = 'spark'; opts.life = randInt(30,80); }
+      if(type === 'star') { /* some star tips thicker */ }
+
+      // allow some particles to be able to sub-burst later (multi-stage)
+      if(type === 'multi' && Math.random() < 0.12) opts.canSubBurst = true;
+
+      particles.push(new Particle(x,y,angle,speed,color,psize,opts));
     }
 
-    update() {
-        this.x += this.dx;
-        this.y += this.dy;
-
-        this.dy += this.gravity;
-        this.dx *= this.friction;
-        this.dy *= this.friction;
-
-        if (this.type === "willow") this.dy += 0.01;
-
-        this.life--;
+    // crackle sub-sparks for crackle type
+    if(type === 'crackle'){
+      for(let s=0;s<60;s++){
+        const angle = rand(0, Math.PI*2);
+        const speed = rand(0.6, 2.2);
+        particles.push(new Particle(x,y,angle,speed,'#fff', rand(0.6,1.2), {type:'spark', life: randInt(18,40), gravity:0.01}));
+      }
     }
 
-    draw() {
-        ctx.globalCompositeOperation = "lighter";
-        ctx.globalAlpha = Math.max(this.life / 150, 0);
-
-        ctx.fillStyle = this.color;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
-        ctx.fill();
-
-        // glow
-        ctx.globalAlpha *= 0.25;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size*3, 0, Math.PI*2);
-        ctx.fill();
-    }
-}
-
-// -------------------------------
-// EXPLOSIONS
-// -------------------------------
-function explode(x, y) {
-    const type = document.getElementById("type").value;
-    const size = Number(document.getElementById("size").value);
-    
-    const color = `hsl(${Math.random()*360},100%,60%)`;
-    let count = 180;
-
-    for (let i = 0; i < count; i++) {
-        let angle = Math.random()*Math.PI*2;
-        let speed = Math.random()*4 + 2;
-
-        if (type === "star") speed *= (i % 5 === 0 ? 2.5 : 0.7);
-        if (type === "flower") angle = Math.floor(i/10)*(Math.PI/5);
-        if (type === "crackle") speed *= 0.4 + Math.random()*2.2;
-        if (type === "willow") speed *= 0.4;
-
-        particles.push(
-            new Particle(x, y, angle, speed, color, size, type)
-        );
+    // play sounds
+    playBoom();
+    if(type === 'crackle') {
+      // schedule small crackles
+      for(let t=0;t<6;t++){
+        setTimeout(()=>playCrackle(), 60 + t*40);
+      }
     }
 
-    // crackle sound effect simulated (light)
-    if (type === "crackle") {
-        for (let i = 0; i < 40; i++) {
-            let angle = Math.random()*Math.PI*2;
-            let speed = 1 + Math.random()*2;
-            particles.push(
-                new Particle(x, y, angle, speed, "#fff", 1.5, type)
-            );
+    // secondary explosions for multi
+    if(type === 'multi'){
+      setTimeout(()=>{
+        // choose some alive particles and cause small sub explosions
+        const sample = particles.slice().filter(p=>p && p.age < p.life && Math.random()<0.02).slice(0,30);
+        sample.forEach(p=>{
+          createExplosion(p.x, p.y, {type: 'peony', size: sizeFactor*0.6});
+        });
+      }, randInt(220, 420));
+    }
+  }
+
+  // --- launch function ---
+  function launchAt(x){
+    rockets.push(new Rocket(x));
+  }
+
+  // auto-launch
+  let autoInterval = null;
+  function startAuto(){
+    if(autoInterval) return;
+    autoInterval = setInterval(()=>{
+      if(document.getElementById('auto').checked){
+        // launch from random x, with some bias to center
+        launchAt(rand(80, innerWidth-80));
+      }
+    }, randInt(600, 1100));
+  }
+  document.getElementById('auto').addEventListener('change', ()=> {
+    if(document.getElementById('auto').checked) startAuto();
+  });
+
+  // finale button
+  document.getElementById('finale').addEventListener('click', ()=>{
+    // rapid launches
+    const id = setInterval(()=>{
+      launchAt(rand(60, innerWidth-60));
+    }, 120);
+    setTimeout(()=> clearInterval(id), 3500);
+  });
+
+  // click/tap to launch
+  canvas.addEventListener('pointerdown', (e)=>{
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    launchAt(x);
+    // resume audio on user gesture (for mobile)
+    if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  });
+
+  // panel auto-hide behavior
+  const panel = document.getElementById('panel');
+  let hideTimer = null;
+  function showPanel(){
+    panel.classList.remove('hidden');
+    if(hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(()=> panel.classList.add('hidden'), 2200);
+  }
+  document.body.addEventListener('mousemove', showPanel);
+  document.body.addEventListener('touchstart', showPanel);
+
+  // initial show
+  showPanel();
+
+  // main render loop
+  function render(){
+    requestAnimationFrame(render);
+
+    // dim background slightly for motion blur (short persistence) - keep trails short
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = 'rgba(0,0,0,0.17)';
+    ctx.fillRect(0,0, innerWidth, innerHeight);
+
+    // draw sky flashes (brighten area for a few frames)
+    for(let i = skyFlashes.length-1; i>=0; i--){
+      const f = skyFlashes[i];
+      f.life--;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = f.alpha * (f.life/24);
+      const g = ctx.createRadialGradient(f.x, f.y, 0, f.x, f.y, Math.max(innerWidth,innerHeight)*0.6);
+      g.addColorStop(0, 'rgba(255,255,255,0.35)');
+      g.addColorStop(0.12, 'rgba(255,255,255,0.08)');
+      g.addColorStop(0.4, 'rgba(0,0,0,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0,0, innerWidth, innerHeight);
+      ctx.restore();
+      if(f.life <= 0) skyFlashes.splice(i,1);
+    }
+
+    // update rockets
+    for(let i = rockets.length-1; i>=0; i--){
+      const r = rockets[i];
+      r.draw();
+      const arrived = r.update();
+      if(arrived){
+        // explosion at location
+        createExplosion(r.x, r.y, {type: document.getElementById('type').value, size: Number(document.getElementById('size').value)});
+        rockets.splice(i,1);
+      }
+    }
+
+    // update particles
+    for(let i = particles.length-1; i>=0; i--){
+      const p = particles[i];
+      const dead = p.update();
+      p.draw();
+      // occasionally spark crackle pop (small bright dots) when conditions
+      if(!dead && p.type !== 'spark' && Math.random() < 0.002 && document.getElementById('type').value === 'crackle'){
+        // spawn tiny sparks
+        for(let s=0;s<3;s++){
+          particles.push(new Particle(p.x, p.y, rand(0,Math.PI*2), rand(0.6,2.0), '#fff', rand(0.6,1.4), {type:'spark', life: randInt(18,45), gravity:0.02}));
         }
+        playCrackle();
+      }
+
+      // if particle allowed to sub-burst (multi-burst)
+      if(!dead && p.canSubBurst && p.age > (p.life*0.25) && Math.random()<0.004){
+        p.canSubBurst = false;
+        createExplosion(p.x, p.y, {type:'peony', size: 2.2});
+      }
+
+      if(dead) particles.splice(i,1);
     }
-}
 
-const rockets = [];
-const particles = [];
+    // optionally draw faint stars/background (could be static)
+    // (skip for performance)
+  }
 
-function launch(x, slow = false) {
-    rockets.push(new Rocket(x, slow));
-}
+  // start render
+  render();
 
-canvas.addEventListener("click", e => launch(e.clientX));
+  // initial auto start if checked
+  if(document.getElementById('auto').checked) startAuto();
 
-setInterval(() => {
-    if (document.getElementById("auto").checked) {
-        launch(Math.random()*W, true);
-    }
-}, 800);
+  // Resume audio on first user gesture (some browsers require)
+  function enableAudioOnGesture(){
+    if(!audioCtx) return;
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+    document.removeEventListener('pointerdown', enableAudioOnGesture);
+  }
+  document.addEventListener('pointerdown', enableAudioOnGesture);
 
-// -------------------------------
-// MAIN LOOP
-// -------------------------------
-function animate() {
-    requestAnimationFrame(animate);
-
-    ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "rgba(0,0,0,0.18)";
-    ctx.fillRect(0,0,W,H);
-
-    rockets.forEach((r,i) => {
-        r.draw();
-        if (r.update()) {
-            explode(r.x, r.y);
-            rockets.splice(i,1);
-        }
-    });
-
-    particles.forEach((p,i) => {
-        p.update();
-        p.draw();
-        if (p.life <= 0) particles.splice(i,1);
-    });
-}
-
-animate();
+})();
 </script>
-
 </body>
 </html>
