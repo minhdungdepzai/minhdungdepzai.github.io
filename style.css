@@ -1,64 +1,35 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
 body {
-    background: black;
+    margin: 0;
     overflow: hidden;
-    font-family: "Segoe UI", sans-serif;
-    color: white;
+    background: black;
+    font-family: sans-serif;
 }
 
-#canvas {
+#c {
     position: fixed;
-    inset: 0;
-    z-index: 1;
+    top: 0;
+    left: 0;
 }
 
 #settings {
     position: fixed;
     top: 20px;
     left: 20px;
-    width: 260px;
-    padding: 15px;
-    background: rgba(20, 20, 20, 0.7);
-    backdrop-filter: blur(7px);
+    padding: 15px 20px;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(8px);
     border-radius: 12px;
-    z-index: 10;
-    transition: opacity .4s ease, transform .4s ease;
+    color: white;
+    transition: opacity .5s ease;
 }
 
-#settings.hidden {
+.hidden {
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-20px);
-}
-
-#settings h2 {
-    margin-bottom: 10px;
-    font-size: 18px;
 }
 
 label {
     display: block;
-    margin: 8px 0;
-    font-size: 14px;
-}
-
-input[type="range"] {
-    width: 100%;
-}
-
-#toggleSettings {
     margin-top: 10px;
-    width: 100%;
-    padding: 8px;
-    border: none;
-    border-radius: 8px;
-    background: #ff4f4f;
-    color: white;
-    cursor: pointer;
     font-size: 14px;
 }
