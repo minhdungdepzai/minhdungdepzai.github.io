@@ -1,4 +1,5 @@
-const canvas = document.getElementById("canvas");
+// ===== Canvas =====
+const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
 function resize() {
@@ -8,142 +9,126 @@ function resize() {
 resize();
 addEventListener("resize", resize);
 
-// =========================
-//  HÀM TIỆN ÍCH
-// =========================
-const rand = (a, b) => Math.random() * (b - a) + a;
-const randInt = (a, b) => Math.floor(rand(a, b));
-const hsl = (h, s, l) => `hsl(${h} ${s}% ${l}%)`;
+// ===== UI hide/show =====
+let lastMove = Date.now();
+const settings = document.getElementById("settings");
+
+document.addEventListener("mousemove", () => {
+    lastMove = Date.now();
+    settings.classList.remove("hidden");
+});
+
+setInterval(() => {
+    if (Date.now() - lastMove > 2000) {
+        settings.classList.add("hidden");
+    }
+}, 300);
+
+// ===== Utils =====
+const rand = (a, b) => a + Math.random() * (b - a);
+const hsl = (h, s, l) => `hsl(${h},${s}%,${l}%)`;
 
 let rockets = [];
 let particles = [];
 
-document.getElementById("toggleSettings").onclick = () => {
-    document.getElementById("settings").classList.toggle("hidden");
-};
-
-// =========================
-//  CLASS ROCKET (HIỆU ỨNG BAY LÊN)
-// =========================
+// Rocket class
 class Rocket {
     constructor(x) {
-        this.startX = x ?? rand(80, innerWidth - 80);
-        this.x = this.startX;
-        this.y = innerHeight + 10;
-
-        this.t = 0;
-        this.speed = rand(2.2, 3.4);
-
-        this.curveStrength = rand(22, 38);
-
-        this.targetY = rand(innerHeight * 0.18, innerHeight * 0.45);
-        this.colorHue = randInt(0, 360);
-
-        this.trail = [];
-        this.maxTrail = 5;
-        this.size = rand(2.6, 4.0);
+        this.x = x ?? rand(80, innerWidth - 80);
+        this.y = innerHeight + 20;
+        this.vx = rand(-0.8, 0.8);   // lượn nhẹ
+        this.vy = rand(3.5, 5.2);
+        this.hue = rand(0, 360);
     }
-
     update() {
-        this.t += 0.04;
+        this.x += this.vx * Math.sin(Date.now() * 0.002); // lượn chữ S
+        this.y -= this.vy;
+        this.vy *= 0.985;
 
-        this.x = this.startX + Math.sin(this.t * 2.2) * this.curveStrength;
-        this.y -= this.speed;
-
-        // bụi li ti rơi xuống khi đang bay
-        if (Math.random() < 0.3) {
-            particles.push(
-                new Particle(
-                    this.x,
-                    this.y,
-                    rand(Math.PI * 0.8, Math.PI * 1.2),
-                    rand(0.6, 1.6),
-                    hsl(this.colorHue, 80, 70),
-                    rand(0.6, 1.0),
-                    { gravity: 0.05, life: randInt(15, 40), decay: 0.96 }
-                )
-            );
+        if (this.vy < 1.5 || this.y < innerHeight * 0.35) {
+            this.explode();
+            return true;
         }
-
-        this.trail.push({ x: this.x, y: this.y });
-        if (this.trail.length > this.maxTrail) this.trail.shift();
-
-        return this.y <= this.targetY;
+        return false;
     }
-
     draw() {
         ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowColor = hsl(this.hue, 100, 80);
+        ctx.shadowBlur = 12;
 
-        // vệt sáng ngắn
-        ctx.globalAlpha = 0.9;
-        for (let i = 0; i < this.trail.length; i++) {
-            const p = this.trail[i];
-            const a = (i + 1) / this.trail.length;
-
-            ctx.fillStyle = hsl(this.colorHue, 100, 60);
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, 1.2 * a, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // đầu đạn pháo hoa
-        ctx.globalAlpha = 1;
-        ctx.shadowBlur = 6;
-        ctx.shadowColor = hsl(this.colorHue, 100, 80);
-        ctx.fillStyle = hsl(this.colorHue, 100, 75);
+        ctx.fillStyle = hsl(this.hue, 100, 70);
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
         ctx.fill();
-
         ctx.restore();
+    }
+
+    explode() {
+        const type = document.getElementById("type").value;
+        const count = Number(document.getElementById("count").value);
+
+        let angleStep = (Math.PI * 2) / count;
+
+        for (let i = 0; i < count; i++) {
+            const angle = angleStep * i;
+            const speed = explosionSpeed(type);
+
+            particles.push(new Particle(this.x, this.y, angle, speed, this.hue, type));
+        }
     }
 }
 
-// =========================
-//  CLASS PARTICLE (HẠT NỔ)
-// =========================
+// Speed by type
+function explosionSpeed(type) {
+    switch (type) {
+        case "spark": return rand(0.5, 2);
+        case "willow": return rand(0.5, 1.3);
+        case "ring": return 3;
+        case "star": return 2.8;
+        case "chrysanthemum": return rand(1, 4);
+        default: return rand(1.5, 4);
+    }
+}
+
+// Particle class
 class Particle {
-    constructor(x, y, angle, speed, color, size, opts = {}) {
+    constructor(x, y, angle, speed, hue, type) {
         this.x = x;
         this.y = y;
-        this.prev = { x, y };
-
         this.vx = Math.cos(angle) * speed;
         this.vy = Math.sin(angle) * speed;
-
-        this.color = color;
-        this.size = size;
-
-        this.life = opts.life ?? randInt(30, 80);
-        this.maxLife = this.life;
-        this.gravity = opts.gravity ?? 0.05;
-        this.decay = opts.decay ?? 0.97;
+        this.hue = hue + rand(-20, 20);
+        this.life = rand(40, 90);
+        this.type = type;
+        this.size = rand(1, 2.5);
     }
 
     update() {
-        this.life--;
-        if (this.life <= 0) return true;
-
-        this.prev.x = this.x;
-        this.prev.y = this.y;
-
         this.x += this.vx;
         this.y += this.vy;
 
-        this.vx *= this.decay;
-        this.vy = this.vy * this.decay + this.gravity;
+        if (this.type !== "ring") {
+            this.vy += 0.02; // gravity
+        }
 
-        return false;
+        this.vx *= 0.99;
+        this.vy *= 0.99;
+
+        this.life--;
+        return this.life <= 0;
     }
 
     draw() {
-        const alpha = this.life / this.maxLife;
-
         ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+
+        let alpha = this.life / 90;
         ctx.globalAlpha = alpha;
-        ctx.shadowBlur = 12;
-        ctx.shadowColor = this.color;
-        ctx.fillStyle = this.color;
+
+        ctx.shadowColor = hsl(this.hue, 100, 70);
+        ctx.shadowBlur = 8;
+        ctx.fillStyle = hsl(this.hue, 100, 60);
 
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -153,61 +138,34 @@ class Particle {
     }
 }
 
-// =========================
-//  TẠO HIỆU ỨNG PHÁO HOA
-// =========================
-function createExplosion(x, y, hue) {
-    const count = randInt(45, 80);
-
-    for (let i = 0; i < count; i++) {
-        particles.push(
-            new Particle(
-                x,
-                y,
-                rand(0, Math.PI * 2),
-                rand(1.5, 5.5),
-                hsl(hue + randInt(-20, 20), 100, rand(50, 70)),
-                rand(1.4, 2.2),
-                {
-                    life: randInt(40, 90),
-                    decay: rand(0.94, 0.985),
-                    gravity: 0.04
-                }
-            )
-        );
-    }
-}
-
-// =========================
-//  LOOP ANIMATION
-// =========================
+// ===== Animation loop =====
 function animate() {
     requestAnimationFrame(animate);
 
-    ctx.fillStyle = "rgba(0, 0, 0, 0.25)";
+    // Fade background
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // random tạo rocket theo rate
-    if (Math.random() < 0.04 * (rocketRate.value / 6)) {
-        rockets.push(new Rocket());
-    }
-
-    // update rocket
+    // Rockets
     for (let i = rockets.length - 1; i >= 0; i--) {
-        const r = rockets[i];
-        r.draw();
-        if (r.update()) {
-            createExplosion(r.x, r.y, r.colorHue);
-            rockets.splice(i, 1);
-        }
+        rockets[i].draw();
+        if (rockets[i].update()) rockets.splice(i, 1);
     }
 
-    // update particles
+    // Particles
     for (let i = particles.length - 1; i >= 0; i--) {
-        const p = particles[i];
-        p.draw();
-        if (p.update()) particles.splice(i, 1);
+        particles[i].draw();
+        if (particles[i].update()) particles.splice(i, 1);
     }
 }
-
 animate();
+
+// ===== Controls =====
+canvas.addEventListener("pointerdown", e => {
+    rockets.push(new Rocket(e.clientX));
+});
+
+// auto launch
+setInterval(() => {
+    if (Math.random() < 0.2) rockets.push(new Rocket());
+}, 700);
