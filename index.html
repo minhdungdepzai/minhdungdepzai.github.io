@@ -1,102 +1,203 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
-<title>3D Heart Particles</title>
+<title>Chúc mừng sinh nhật Anh Thư 🎉</title>
+
 <style>
-    body {
-        margin: 0;
-        overflow: hidden;
-        background: black;
+body {
+    margin: 0;
+    height: 100vh;
+    background: linear-gradient(135deg, #ff9a9e, #fad0c4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: "Segoe UI", sans-serif;
+    overflow: hidden;
+}
+
+/* ===== Container ===== */
+.container {
+    text-align: center;
+    position: relative;
+    z-index: 10;
+}
+
+/* ===== Nút mở thiệp ===== */
+.open-btn {
+    padding: 22px 46px;
+    font-size: 24px;
+    border: none;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #ff5e78, #ff85a2);
+    color: white;
+    cursor: pointer;
+    animation: pulse 1.5s infinite;
+    box-shadow: 0 0 35px rgba(255,94,120,0.9);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); box-shadow: 0 0 20px #ff5e78; }
+    50% { transform: scale(1.08); box-shadow: 0 0 45px #ffd1dc; }
+    100% { transform: scale(1); box-shadow: 0 0 20px #ff5e78; }
+}
+
+/* ===== Thiệp ===== */
+.card {
+    width: 380px;
+    background: white;
+    border-radius: 28px;
+    padding: 30px;
+    box-shadow: 0 22px 50px rgba(0,0,0,0.35);
+    display: none;
+    animation: openCard 1.2s ease forwards;
+}
+
+@keyframes openCard {
+    from {
+        transform: scale(0.6) rotateY(-90deg);
+        opacity: 0;
     }
-    canvas {
-        display: block;
+    to {
+        transform: scale(1) rotateY(0);
+        opacity: 1;
     }
+}
+
+h2 { color: #ff5e78; margin-bottom: 6px; }
+h3 { color: #ff85a2; margin-top: 0; }
+p {
+    color: #555;
+    line-height: 1.6;
+    font-size: 16px;
+}
+
+/* ===== Tim & pháo hoa ===== */
+.heart {
+    position: absolute;
+    font-size: 22px;
+    animation: floatUp linear forwards;
+    pointer-events: none;
+}
+
+@keyframes floatUp {
+    from {
+        transform: translateY(100vh) scale(0.8);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-25vh) scale(1.5);
+        opacity: 0;
+    }
+}
+
+/* ===== Ảnh nền ===== */
+.bg-images {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.photo {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    border-radius: 20px;
+    overflow: hidden;
+    background: white;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.25);
+    animation: drift linear infinite;
+}
+
+.photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@keyframes drift {
+    from {
+        transform: translateY(110vh) rotate(0deg);
+        opacity: 0;
+    }
+    10% { opacity: 1; }
+    to {
+        transform: translateY(-35vh) rotate(360deg);
+        opacity: 0;
+    }
+}
 </style>
 </head>
+
 <body>
-<canvas id="canvas"></canvas>
+
+<div class="container">
+    <button class="open-btn" onclick="openCard()">💌 Mở thiệp sinh nhật 💌</button>
+
+    <div class="card" id="card">
+        <h2>🎉 Chúc mừng sinh nhật 🎂</h2>
+        
+        <p>
+            Chúc Thư sang tuổi mới luôn vui vẻ, học tập thật tốt ✨  
+            Tuổi 17 mong sẽ mang đến cho Thư thật nhiều  
+            kỷ niệm đẹp, nụ cười và hạnh phúc 💕  
+            Luôn mạnh khỏe và rạng rỡ nhaaa 🥰
+        </p>
+    </div>
+</div>
+
+<div class="bg-images" id="bgImages"></div>
 
 <script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
+/* ===== DANH SÁCH 6 ẢNH (ĐÚNG THEO TÊN FILE CỦA EM) ===== */
+const imageList = [
+    "images/0e7eae66-7f99-4dfb-b0df-bb46869d2dfe.jpg",
+    "images/5e5b4f14-49aa-47bd-b306-d0aca19a783f.jpg",
+    "images/95c00bce-d0d0-435d-92e9-8ba6b77bd665.jpg",
+    "images/554183f9-a938-47f7-a1c3-b6a5c72fcf16.jpg",
+    "images/abaf2f67-fd1b-4fc5-949e-0d122ec3fca6.jpg",
+    "images/f2bd5b64-dd44-4026-9706-f95c0573a718.jpg"
+];
 
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+function openCard() {
+    document.querySelector(".open-btn").style.display = "none";
+    document.getElementById("card").style.display = "block";
 
-let particles = [];
-let t = 0;
-
-// ---- HÀM TRÁI TIM 3D MỀM MƯỢT + PHỒNG ----
-function heartPoint(angle, scale) {
-    // Công thức trái tim 3D mềm
-    let x = 15 * Math.sin(angle) ** 3;
-    let y = -(
-        12 * Math.cos(angle) -
-        5 * Math.cos(2 * angle) -
-        2 * Math.cos(3 * angle) -
-        Math.cos(4 * angle)
-    );
-
-    // Hiệu ứng phồng 3D (nhịp đập + độ sâu)
-    let puff = 1 + 0.15 * Math.sin(angle * 2 + t * 2);
-
-    return {
-        x: canvas.width / 2 + x * scale * puff,
-        y: canvas.height / 2 + y * scale * puff
-    };
+    heartFireworks();
+    startFloatingImages();
 }
 
-// ---- TẠO HẠT TRÊN BỀ MẶT + VIỀN TRÁI TIM ----
-function spawnParticle() {
-    let scale = 10 + Math.sin(t) * 1.4; // nhịp đập mạnh hơn tí
-    let angle = Math.random() * Math.PI * 2;
-
-    // 80% hạt ở viền - 20% bên trong
-    let r = (Math.random() < 0.8) ? 1 : (0.6 + Math.random() * 0.35);
-
-    let hp = heartPoint(angle, scale * r);
-
-    let speed = 0.6 + Math.random() * 1.2;
-
-    particles.push({
-        x: hp.x,
-        y: hp.y,
-        vx: (Math.random() - 0.5) * speed,
-        vy: (Math.random() - 0.5) * speed,
-        alpha: 1,
-        size: Math.random() * 2 + 1,
-        color: "#ff4fa3"
-    });
-}
-
-// ---- VẼ ANIMATION ----
-function animate() {
-    requestAnimationFrame(animate);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    t += 0.07;
-
-    // tạo rất nhiều hạt -> trái tim dày và sáng
-    for (let i = 0; i < 160; i++) spawnParticle();
-
-    // vẽ từng hạt
-    for (let i = particles.length - 1; i >= 0; i--) {
-        let p = particles[i];
-        ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
-        ctx.fillRect(p.x, p.y, p.size, p.size);
-
-        p.x += p.vx;
-        p.y += p.vy;
-
-        p.alpha -= 0.012; // hạt mờ chậm -> giữ độ dày
-
-        if (p.alpha <= 0) particles.splice(i, 1);
+/* ===== Tim pháo hoa ===== */
+function heartFireworks() {
+    for (let i = 0; i < 50; i++) {
+        const h = document.createElement("div");
+        h.className = "heart";
+        h.innerHTML = ["💖","💕","💘","💗"][Math.floor(Math.random()*4)];
+        h.style.left = Math.random() * 100 + "vw";
+        h.style.animationDuration = (3 + Math.random()*3) + "s";
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), 7000);
     }
 }
 
-animate();
+/* ===== Ảnh phân tán chạy nền ===== */
+function startFloatingImages() {
+    setInterval(() => {
+        const frame = document.createElement("div");
+        frame.className = "photo";
+        frame.style.left = Math.random() * 85 + "vw";
+        frame.style.animationDuration = (14 + Math.random()*6) + "s";
+
+        const img = document.createElement("img");
+        img.src = imageList[Math.floor(Math.random() * imageList.length)];
+        frame.appendChild(img);
+
+        document.getElementById("bgImages").appendChild(frame);
+        setTimeout(() => frame.remove(), 20000);
+    }, 1300);
+}
 </script>
+
 </body>
 </html>
