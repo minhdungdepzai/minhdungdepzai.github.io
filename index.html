@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Happy Birthday 🎂</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:'Segoe UI',sans-serif;
+}
+
+body{
+    height:100vh;
+    background:linear-gradient(135deg,#ffb6c1,#ffe4e1);
+    overflow:hidden;
+}
+
+/* ===== PAGE ===== */
+.page{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:1s ease;
+}
+.hidden{
+    opacity:0;
+    pointer-events:none;
+    transform:scale(0.96);
+}
+
+/* ===== CARD ===== */
+.card{
+    background:white;
+    padding:25px;
+    border-radius:30px;
+    text-align:center;
+    width:90%;
+    max-width:380px;
+    box-shadow:0 20px 40px rgba(0,0,0,0.25);
+}
+
+/* ===== AVATAR ===== */
+.avatar{
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    object-fit:cover;
+    border:4px solid #ff9aa2;
+    margin-bottom:10px;
+}
+
+/* ===== DISPLAY ===== */
+.display{
+    background:#fff0f5;
+    color:#ff5c8a;
+    font-size:22px;
+    padding:12px;
+    border-radius:15px;
+    letter-spacing:4px;
+    margin:10px 0 15px;
+    border:2px dashed #ffb6c1;
+}
+
+/* ===== KEYPAD ===== */
+.keypad{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+.keypad button{
+    padding:16px 0;
+    font-size:18px;
+    border:none;
+    border-radius:18px;
+    background:linear-gradient(135deg,#ffd1dc,#ffe6eb);
+    color:#ff4f81;
+    cursor:pointer;
+    box-shadow:0 6px 12px rgba(255,105,135,0.3);
+}
+.keypad button:active{ transform:scale(0.95); }
+.clear{
+    grid-column:1/4;
+    background:linear-gradient(135deg,#ff6f91,#ff9aa2)!important;
+    color:white!important;
+}
+
+/* ===== ENVELOPE ===== */
+.envelope{
+    width:260px;
+    height:160px;
+    background:#ff9aa2;
+    border-radius:22px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin:15px auto 0;
+    cursor:pointer;
+}
+.envelope img{
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    border:4px solid white;
+}
+
+/* ===== BUTTON ===== */
+.next{
+    margin-top:20px;
+    padding:12px 25px;
+    border:none;
+    border-radius:20px;
+    background:linear-gradient(135deg,#ff6f91,#ff9aa2);
+    color:white;
+    font-size:16px;
+    cursor:pointer;
+}
+
+/* ===== PAGE 4 SMOOTH IMAGES ===== */
+.slide{
+    position:absolute;
+    width:130px;
+    aspect-ratio:1/1;
+    object-fit:cover;
+
+    border-radius:30px;
+    box-shadow:0 14px 30px rgba(255,105,135,0.35);
+
+    animation:
+        moveX var(--speed) linear infinite,
+        floatY 6s ease-in-out infinite,
+        fade 30s linear infinite;
+
+    will-change: transform, opacity;
+}
+
+/* trượt ngang mượt */
+@keyframes moveX{
+    from{ transform:translateX(-220px); }
+    to{ transform:translateX(120vw); }
+}
+
+/* trôi lên xuống nhẹ */
+@keyframes floatY{
+    0%,100%{ transform:translateY(0); }
+    50%{ transform:translateY(-20px); }
+}
+
+/* mờ vào – mờ ra */
+@keyframes fade{
+    0%{ opacity:0; }
+    10%{ opacity:0.95; }
+    90%{ opacity:0.95; }
+    100%{ opacity:0; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- MUSIC -->
+<audio id="bgm" src="music/birthday.mp3" loop></audio>
+
+<!-- PAGE 1 -->
+<div class="page" id="page1">
+    <div class="card">
+        <img src="images/anh1.jpg" class="avatar">
+        <h3>🎂 Nhập ngày sinh</h3>
+
+        <div class="display" id="display">______</div>
+
+        <div class="keypad">
+            <button onclick="press(1)">1</button>
+            <button onclick="press(2)">2</button>
+            <button onclick="press(3)">3</button>
+
+            <button onclick="press(4)">4</button>
+            <button onclick="press(5)">5</button>
+            <button onclick="press(6)">6</button>
+
+            <button onclick="press(7)">7</button>
+            <button onclick="press(8)">8</button>
+            <button onclick="press(9)">9</button>
+
+            <div></div>
+            <button onclick="press(0)">0</button>
+            <div></div>
+
+            <button class="clear" onclick="clearInput()">Xóa 💗</button>
+        </div>
+
+        <p id="error" style="color:red;margin-top:10px"></p>
+    </div>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page hidden" id="page2">
+    <div class="card">
+        <h2>💌 Có một tấm thiệp</h2>
+        <div class="envelope" onclick="nextPage(3)">
+            <img src="images/anh1.jpg">
+        </div>
+        <p style="margin-top:18px">Nhấn để mở thiệp nha ❤️</p>
+    </div>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page hidden" id="page3">
+    <div class="card">
+        <h2>🎉 Happy Birthday 🎉</h2><br>
+        <p>
+            Chúc anh luôn vui vẻ, mạnh khỏe và hạnh phúc 💖<br><br>
+            Mong mỗi ngày của anh đều ngập tràn yêu thương 🌸<br><br>
+            Sinh nhật thật trọn vẹn nha 🎂
+        </p>
+        <button class="next" onclick="nextPage(4)">Xem tiếp ✨</button>
+    </div>
+</div>
+
+<!-- PAGE 4 -->
+<div class="page hidden" id="page4"></div>
+
+<script>
+let input="";
+
+function press(n){
+    if(input.length>=6) return;
+    input+=n;
+    display.innerText=input.padEnd(6,"_");
+    if(input.length===6){
+        if(input==="291208") nextPage(2);
+        else{
+            error.innerText="❌ Ngày sinh không đúng!";
+            clearInput();
+        }
+    }
+}
+
+function clearInput(){
+    input="";
+    display.innerText="______";
+}
+
+function nextPage(n){
+    document.querySelectorAll(".page").forEach(p=>p.classList.add("hidden"));
+    document.getElementById("page"+n).classList.remove("hidden");
+    if(n===4) startPage4();
+}
+
+function startPage4(){
+    const music=document.getElementById("bgm");
+    music.volume=0.6;
+    music.play();
+
+    const imgs=["anh1.jpg","anh2.jpg","anh3.jpg","anh4.jpg","anh5.jpg","anh6.jpg"];
+
+    imgs.forEach((img,i)=>{
+        const s=document.createElement("img");
+        s.src="images/"+img;
+        s.className="slide";
+
+        s.style.top=(Math.random()*65+5)+"%";
+        s.style.setProperty("--speed",(26+Math.random()*10)+"s");
+        s.style.animationDelay=(i*3)+"s";
+
+        document.body.appendChild(s);
+    });
+}
+</script>
+
+</body>
+</html>
